@@ -4,8 +4,7 @@
 
 SquadSync is a MERN stack web application designed to help students and developers find teammates for hackathons, college projects, sports events, and gaming tournaments. It bridges the gap between individuals looking to collaborate and squads looking for specific skills.
 
-![Project Banner](https://via.placeholder.com/1200x400?text=SquadSync+Preview) 
-*(Note: Replace the link above with a screenshot of your app)*
+![Project Banner] frontend\src\assets\Banner.png
 
 ## 🚀 Features
 
