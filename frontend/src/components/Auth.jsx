@@ -9,66 +9,66 @@ const Auth = ({ onClose, onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Ensure backend endpoints are /users/login and /users/register
     const endpoint = isLogin ? '/login' : '/register';
-
     try {
       const res = await axios.post(`${API_URL}/users${endpoint}`, formData);
       onAuthSuccess(res.data, !isLogin); 
       onClose();
     } catch (err) {
-      console.error(err);
       toast.error(err.response?.data?.msg || 'Authentication failed');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputWrapperClass = "relative";
+  const inputClass = "w-full bg-gray-50 border-2 border-transparent pl-10 md:pl-12 pr-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl font-bold text-sm text-[#2D2D2D] focus:bg-white focus:border-[#FF6F00] outline-none transition-all placeholder:text-gray-400 placeholder:font-medium";
+  const labelClass = "block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1.5 ml-1";
+  const iconClass = "absolute left-3.5 md:left-4 top-[2.1rem] md:top-[2.4rem] text-gray-400 w-4 h-4 md:w-[18px] md:h-[18px]";
+
   return (
-    <Modal isOpen={true} onClose={onClose} title={isLogin ? "Welcome Back" : "Join SquadSync"} maxWidth="max-w-sm">
-      <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-        {!isLogin && (
-           <div>
-             <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Full Name</label>
-             <div className="relative">
-                <User size={16} className="absolute left-3 top-3.5 text-stone-400" />
-                <input type="text" className="w-full bg-stone-50 border-transparent pl-9 pr-3 py-3 rounded-xl font-bold text-stone-800 focus:bg-white ring-2 ring-transparent focus:ring-violet-200 outline-none transition-all" placeholder="John Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-             </div>
-           </div>
-        )}
-        <div>
-           <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Email Address</label>
-           <div className="relative">
-                <Mail size={16} className="absolute left-3 top-3.5 text-stone-400" />
-                <input type="email" className="w-full bg-stone-50 border-transparent pl-9 pr-3 py-3 rounded-xl font-bold text-stone-800 focus:bg-white ring-2 ring-transparent focus:ring-violet-200 outline-none transition-all" placeholder="you@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-           </div>
+    <Modal isOpen={true} onClose={onClose} title={isLogin ? "Welcome Back!" : "Join the Club"} maxWidth="max-w-sm">
+      <div className="mt-1 md:mt-2">
+        <p className="text-gray-500 font-medium text-xs md:text-sm mb-5 md:mb-6">
+            {isLogin ? "Ready to find your next squad?" : "Create an account to start hosting and joining squads."}
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+            {!isLogin && (
+                <div className={inputWrapperClass}>
+                    <label className={labelClass}>Full Name</label>
+                    <User className={iconClass} />
+                    <input type="text" className={inputClass} placeholder="John Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                </div>
+            )}
+            
+            <div className={inputWrapperClass}>
+                <label className={labelClass}>Email Address</label>
+                <Mail className={iconClass} />
+                <input type="email" className={inputClass} placeholder="you@college.edu" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
+            </div>
+
+            <div className={inputWrapperClass}>
+                <label className={labelClass}>Password</label>
+                <Lock className={iconClass} />
+                <input type="password" className={inputClass} placeholder="••••••••" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
+            </div>
+            
+            <button disabled={loading} className="w-full bg-[#FF6F00] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold hover:bg-[#E65100] transition-all shadow-xl shadow-orange-200 mt-4 md:mt-6 flex items-center justify-center gap-2 hover:scale-[1.02] text-sm md:text-base">
+                {loading ? <Loader className="animate-spin" size={20}/> : (isLogin ? <>Log In <ArrowRight size={18}/></> : 'Create Account')}
+            </button>
+        </form>
+
+        <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-100 text-center">
+            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[10px] md:text-xs font-bold text-gray-400 hover:text-[#FF6F00] transition-colors uppercase tracking-wide">
+                {isLogin ? "New here? Create Account" : "Already have an account? Log in"}
+            </button>
         </div>
-        <div>
-           <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Password</label>
-           <div className="relative">
-                <Lock size={16} className="absolute left-3 top-3.5 text-stone-400" />
-                <input type="password" className="w-full bg-stone-50 border-transparent pl-9 pr-3 py-3 rounded-xl font-bold text-stone-800 focus:bg-white ring-2 ring-transparent focus:ring-violet-200 outline-none transition-all" placeholder="••••••••" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
-           </div>
-        </div>
-        
-        <button disabled={loading} className="w-full bg-violet-600 text-white py-3.5 rounded-xl font-bold hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 mt-4 flex items-center justify-center gap-2">
-          {loading ? <Loader className="animate-spin" size={20}/> : (isLogin ? 'Log In' : 'Create Account')}
-        </button>
-      </form>
-      <div className="mt-6 text-center">
-        <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-xs font-bold text-stone-400 hover:text-violet-600 transition-colors">
-           {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-        </button>
       </div>
     </Modal>
   );
