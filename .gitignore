@@ -10,6 +10,8 @@ yarn.lock
 .env.*.local
 */.env
 */.env.local
+backend/.env
+.env
 
 # Build outputs
 dist/

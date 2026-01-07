@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
-import { Plus, Menu } from 'lucide-react'; // Added Menu icon
+import { Plus, Menu } from 'lucide-react';
 
 // Hooks
 import { useSquads } from './hooks/useSquads';
@@ -12,10 +12,9 @@ import Sidebar from './components/Layout/Sidebar';
 import LobbyCard, { LobbySkeleton } from './components/LobbyCard';
 import FilterBar from './components/Layout/FilterBar';
 import { API_URL } from './constants';
-import Logo from './assets/Logo2.png'; // Import Logo for Mobile Header
+import Logo from './assets/Logo2.png';
 
 // Modals
-// ... (Your existing modal imports) ...
 import Auth from './components/Auth';
 import CreateSquadModal from './components/Modals/CreateSquadModal';
 import SquadDetailsModal from './components/Modals/SquadDetailsModal';
@@ -54,7 +53,6 @@ export default function App() {
   });
 
   // --- DATA FILTERING ---
-  // ... (Your existing displayLobbies useMemo) ...
   const displayLobbies = useMemo(() => {
     let data = [];
     const currentUid = user ? user.uid : 'guest'; 
@@ -71,26 +69,33 @@ export default function App() {
   }, [lobbies, activeTab, filter, user]);
 
   // --- ACTIONS ---
-  // ... (Your existing action handlers: handleLobbySubmit, handleDisband, etc.) ...
   const handleLobbySubmit = async (e, formData) => {
     e.preventDefault();
     if (!user) return setModals({ ...modals, auth: true });
 
+    // FIX: Safely determine if we are editing or creating
+    // We check formData._id first (if passed from modal state), then fallback to the state in App.jsx
+    const lobbyId = formData._id || modals.editingLobby?._id;
+
     const payload = {
         ...formData, 
-        hostId: user.uid, hostName: user.name,
+        hostId: user.uid, 
+        hostName: user.name,
         hostMeta: { phone: user.showContact ? user.phone : null, email: user.showContact ? user.email : null },
     };
 
-    if (!modals.editingLobby) {
+    // Only add host as a player if it's a NEW squad
+    if (!lobbyId) {
         payload.players = [{ uid: user.uid, name: user.name }];
     }
 
     try {
-      if (modals.editingLobby) {
-          await axios.put(`${API_URL}/lobbies/${modals.editingLobby._id}`, payload); 
+      if (lobbyId) {
+          // UPDATE EXISTING
+          await axios.put(`${API_URL}/lobbies/${lobbyId}`, payload); 
           toast.success("Squad updated!");
       } else {
+          // CREATE NEW
           await axios.post(`${API_URL}/lobbies`, payload);
           toast.success("Squad created successfully!");
           setActiveTab('created');
@@ -98,6 +103,7 @@ export default function App() {
       fetchLobbies(); 
       setModals({ ...modals, create: false, editingLobby: null });
     } catch (err) { 
+      console.error(err);
       toast.error("Operation failed"); 
     }
   };
@@ -170,7 +176,7 @@ export default function App() {
 
       <main className="flex-1 lg:ml-80 p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
          
-         {/* --- MOBILE TOP BAR (Only visible on Mobile/Tablet) --- */}
+         {/* --- MOBILE TOP BAR --- */}
          <div className="lg:hidden flex items-center justify-between mb-8 sticky top-0 bg-[#F4F4F5]/90 backdrop-blur-md z-30 py-4">
             <div className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm p-1">
@@ -206,7 +212,7 @@ export default function App() {
              <FilterBar filter={filter} setFilter={setFilter} />
          )}
 
-         {/* Responsive Grid: 1 col mobile, 2 cols tablet, 3 cols desktop */}
+         {/* Responsive Grid */}
          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 pb-32">
              {loading ? (
                 [...Array(6)].map((_, i) => <LobbySkeleton key={i} />)
@@ -231,7 +237,7 @@ export default function App() {
          </div>
       </main>
 
-      {/* Floating Action Button (Adjusted size for mobile) */}
+      {/* Floating Action Button */}
       <button 
         onClick={() => {
             if (!user) return setModals({...modals, auth: true});

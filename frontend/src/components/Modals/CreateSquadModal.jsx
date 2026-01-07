@@ -14,6 +14,7 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
   useEffect(() => {
     if (editingLobby) {
         const dateStr = editingLobby.eventDate ? new Date(editingLobby.eventDate).toISOString().slice(0, 16) : '';
+        // FIX: Ensure the entire editingLobby object (including _id) is spread into state
         setFormData({ ...editingLobby, eventDate: dateStr }); 
     } else {
         setFormData(initialState); 
@@ -23,7 +24,6 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
   const labelStyle = "text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5";
   const inputWrapperStyle = "flex flex-col";
   
-  // Responsive Input Styles
   const baseInputStyle = "w-full bg-gray-50 border-2 border-transparent rounded-xl font-bold text-[#2D2D2D] text-xs md:text-sm focus:bg-white focus:border-[#FF6F00] outline-none transition-all placeholder:text-gray-300";
   const inputStyle = `${baseInputStyle} px-3 py-3 md:px-4 md:py-3`;
   const selectStyle = `${baseInputStyle} pl-3 pr-8 py-3 md:pl-4 md:pr-8 appearance-none cursor-pointer`;
@@ -32,7 +32,6 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
     <Modal isOpen={isOpen} onClose={onClose} title={editingLobby ? "Edit Squad" : "Launch Squad"} maxWidth="max-w-5xl">
        <form onSubmit={(e) => onSubmit(e, formData)} className="flex flex-col gap-4 md:gap-6">
           
-          {/* TOP ROW */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
             <div className={`md:col-span-8 ${inputWrapperStyle}`}>
                 <label className={labelStyle}><Type size={12}/> Squad Name</label>
@@ -54,7 +53,6 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
             </div>
           </div>
 
-          {/* MIDDLE ROW */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 h-full">
             <div className="md:col-span-7 flex flex-col h-full">
                 <label className={labelStyle}><AlignLeft size={12}/> The Plan</label>
@@ -93,9 +91,9 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
             </div>
           </div>
           
-          {/* FOOTER BUTTON */}
           <div className="pt-4 flex justify-end border-t border-gray-100 mt-2">
-             <button className="w-full md:w-auto px-6 md:px-8 py-3 bg-[#2D2D2D] text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm">
+             {/* FIX: Added type="submit" */}
+             <button type="submit" className="w-full md:w-auto px-6 md:px-8 py-3 bg-[#2D2D2D] text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm">
                 {editingLobby ? "Save Changes" : "Launch Squad"} <ArrowRight size={16} className="text-[#FF6F00]" />
              </button>
           </div>
