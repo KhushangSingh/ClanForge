@@ -12,10 +12,11 @@ const app = express();
 const server = http.createServer(app);
 
 // --- Middleware ---
-// Previous Frontend URLs (for development): "http://localhost:5173", "http://localhost:5174"
+// UPDATED: Added localhost:5173 to allowed origins
 app.use(cors({
-    origin: ["https://squadsync-frontend.onrender.com"], // Allow Frontend URLs
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    origin: ["http://localhost:5173", "https://squadsync-frontend.onrender.com"], 
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
 }));
 app.use(express.json());
 
@@ -25,11 +26,12 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/squadsync')
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // --- Socket.io Setup ---
-// Previous Frontend URLs (for development): "http://localhost:5173", "http://localhost:5174"
+// UPDATED: Added localhost:5173 here as well
 const io = new Server(server, {
   cors: {
-    origin: ["https://squadsync-frontend.onrender.com"],
-    methods: ["GET", "POST"]
+    origin: ["http://localhost:5173", "https://squadsync-frontend.onrender.com"],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 

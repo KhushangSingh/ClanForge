@@ -31,9 +31,26 @@ import {
 export default function App() {
   const { user, login, logout, updateProfile, deleteAccount } = useAuth();
   const { lobbies, loading, fetchLobbies } = useSquads(user);
-  
+
   // UI State
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => {
+    // Restore tab from localStorage, default to 'home'
+    return localStorage.getItem('squadsync_activeTab') || 'home';
+  });
+
+  // Persist activeTab to localStorage on change
+  React.useEffect(() => {
+    localStorage.setItem('squadsync_activeTab', activeTab);
+  }, [activeTab]);
+
+  // Helper: Only allow guests to view Find Squads
+  const handleTabChange = (tab) => {
+    if (!user && tab !== 'home') {
+      setModals(modals => ({ ...modals, auth: true }));
+      return;
+    }
+    setActiveTab(tab);
+  };
   const [filter, setFilter] = useState('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
@@ -55,15 +72,19 @@ export default function App() {
   // --- DATA FILTERING ---
   const displayLobbies = useMemo(() => {
     let data = [];
-    const currentUid = user ? user.uid : 'guest'; 
-    
-    if (activeTab === 'home') { 
-        data = lobbies.filter(l => l.hostId !== currentUid); 
-        if (filter !== 'all') data = data.filter(l => l.category === filter); 
-    } else if (activeTab === 'created') { 
-        data = user ? lobbies.filter(l => l.hostId === currentUid) : []; 
-    } else if (activeTab === 'joined') { 
-        data = user ? lobbies.filter(l => l.players.some(p => p.uid === currentUid) && l.hostId !== currentUid) : []; 
+    const currentUid = user ? user.uid : 'guest';
+
+    if (activeTab === 'home') {
+      // UPDATED LOGIC: Filter out any lobby where the user is a player (Host or Member)
+      data = lobbies.filter(l => !l.players.some(p => p.uid === currentUid));
+
+      if (filter !== 'all') data = data.filter(l => l.category === filter);
+    } else if (activeTab === 'created') {
+      // Only show squads where user is currently the host
+      data = user ? lobbies.filter(l => l.hostId === currentUid) : [];
+    } else if (activeTab === 'joined') {
+      // Show squads where user is a member (including host)
+      data = user ? lobbies.filter(l => l.players.some(p => p.uid === currentUid)) : [];
     }
     return data;
   }, [lobbies, activeTab, filter, user]);
@@ -73,20 +94,40 @@ export default function App() {
     e.preventDefault();
     if (!user) return setModals({ ...modals, auth: true });
 
-    // FIX: Safely determine if we are editing or creating
-    // We check formData._id first (if passed from modal state), then fallback to the state in App.jsx
+    // 1. Get Lobby ID (Check form data first, fallback to editingLobby state)
     const lobbyId = formData._id || modals.editingLobby?._id;
 
-    const payload = {
-        ...formData, 
-        hostId: user.uid, 
-        hostName: user.name,
-        hostMeta: { phone: user.showContact ? user.phone : null, email: user.showContact ? user.email : null },
+    // 2. Prepare Payload (Clone data)
+    const payload = { ...formData };
+    // Ensure eventDate is always in YYYY-MM-DD format for backend
+    if (payload.eventDate) {
+      // If eventDate is already a Date object, convert to string
+      if (payload.eventDate instanceof Date) {
+        payload.eventDate = payload.eventDate.toISOString().slice(0, 10);
+      } else if (typeof payload.eventDate === 'string' && payload.eventDate.includes('T')) {
+        payload.eventDate = payload.eventDate.split('T')[0];
+      }
+    }
+    
+    // Add Host Meta
+    payload.hostId = user.uid;
+    payload.hostName = user.name;
+    payload.hostMeta = { 
+        phone: user.showContact ? user.phone : null, 
+        email: user.showContact ? user.email : null 
     };
 
-    // Only add host as a player if it's a NEW squad
+    // 3. CLEANUP: Remove system fields to prevent DB errors on update
+    delete payload._id; 
+    delete payload.createdAt;
+    delete payload.updatedAt;
+    delete payload.__v;
+    delete payload.players; // Don't overwrite player list on simple edit
+    delete payload.requests; // Don't overwrite requests
+
+    // 4. If Creating New, Initialize Players with avatarId
     if (!lobbyId) {
-        payload.players = [{ uid: user.uid, name: user.name }];
+      payload.players = [{ uid: user.uid, name: user.name, avatarId: user.avatarId }];
     }
 
     try {
@@ -104,7 +145,7 @@ export default function App() {
       setModals({ ...modals, create: false, editingLobby: null });
     } catch (err) { 
       console.error(err);
-      toast.error("Operation failed"); 
+      toast.error(err.response?.data?.msg || "Operation failed"); 
     }
   };
 
@@ -125,13 +166,20 @@ export default function App() {
         toast.success("Left squad");
         fetchLobbies();
         setModals({ ...modals, leave: null, details: null });
-    } catch (err) { toast.error("Error leaving"); } 
+    } catch (err) {
+      // Custom message if host must transfer leadership
+      if (modals.leave.hostId === user.uid && modals.leave.players.length > 1) {
+        toast.error("You must make another member the leader before leaving.");
+      } else {
+        toast.error("Error leaving");
+      }
+    }
   };
 
   const handleJoinRequest = async (requestData) => {
     if (!modals.join) return;
     try {
-      await axios.post(`${API_URL}/lobbies/${modals.join._id}/request`, { uid: user.uid, ...requestData });
+      await axios.post(`${API_URL}/lobbies/${modals.join._id}/request`, { uid: user.uid, avatarId: user.avatarId, ...requestData });
       setModals({ ...modals, join: null, requestSent: true });
     } catch (err) { toast.error(err.response?.data?.msg || "Failed"); }
   };
@@ -159,22 +207,22 @@ export default function App() {
     <div className="min-h-screen bg-[#F4F4F5] text-[#2D2D2D] font-sans flex flex-col lg:flex-row">
       <Toaster position="top-center" toastOptions={{ style: { borderRadius: '1rem', background: '#333', color: '#fff' } }} />
       
-      <Sidebar 
+        <Sidebar 
          activeTab={activeTab} 
          isOpen={isSidebarOpen}
          onClose={() => setIsSidebarOpen(false)}
-         setActiveTab={setActiveTab}
+         setActiveTab={handleTabChange}
          userName={user?.name}
          userAvatar={user?.avatarId}
          onLogout={() => setModals({ ...modals, logout: true })}
          onOpenProfile={() => {
-             if (!user) setModals({ ...modals, auth: true });
-             else setModals({ ...modals, profile: true });
+           if (!user) setModals({ ...modals, auth: true });
+           else setModals({ ...modals, profile: true });
          }}
          pendingRequestsCount={0} 
-      />
+        />
 
-      <main className="flex-1 lg:ml-80 p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
+      <main className="flex-1 lg:ml-80 p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full overflow-x-hidden">
          
          {/* --- MOBILE TOP BAR --- */}
          <div className="lg:hidden flex items-center justify-between mb-8 sticky top-0 bg-[#F4F4F5]/90 backdrop-blur-md z-30 py-4">
@@ -213,7 +261,7 @@ export default function App() {
          )}
 
          {/* Responsive Grid */}
-         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 pb-32">
+         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 pb-32 overflow-x-hidden">
              {loading ? (
                 [...Array(6)].map((_, i) => <LobbySkeleton key={i} />)
              ) : displayLobbies.length === 0 ? (
@@ -250,11 +298,46 @@ export default function App() {
       </button>
 
       {/* --- MODALS --- */}
-      {modals.auth && <Auth onClose={() => setModals({...modals, auth: false})} onAuthSuccess={(data) => { login(data); setModals({...modals, auth: false}); }} />}
+      {modals.auth && <Auth onClose={() => setModals({...modals, auth: false})} onAuthSuccess={(data) => { login(data); setModals({...modals, auth: false, profile: true }); }} />}
       {modals.create && <CreateSquadModal isOpen={true} onClose={() => setModals({...modals, create: false, editingLobby: null})} onSubmit={handleLobbySubmit} editingLobby={modals.editingLobby} />}
-      {modals.details && <SquadDetailsModal lobby={modals.details} user={user} onClose={() => setModals({...modals, details: null})} onJoin={() => setModals({ ...modals, join: modals.details, details: null })} onLeave={() => setModals({ ...modals, leave: modals.details })} onKick={handleKick} onAcceptRequest={(uid, name) => handleRequestAction('accept', uid, name)} onRejectRequest={(uid) => handleRequestAction('reject', uid)} onViewMember={(member) => {/* View member logic */}} />}
+      {modals.details && (
+        !user ? (
+          <Auth onClose={() => setModals({...modals, auth: false, details: null})} onAuthSuccess={(data) => { login(data); setModals({...modals, auth: false, profile: true, details: null }); }} />
+        ) : (
+          <SquadDetailsModal 
+            lobby={lobbies.find(l => l._id === modals.details._id) || modals.details}
+            user={user}
+            onClose={() => setModals({...modals, details: null})}
+            onJoin={() => setModals({ ...modals, join: modals.details, details: null })}
+            onLeave={() => setModals({ ...modals, leave: modals.details })}
+            onKick={async (targetUid) => {
+              await handleKick(targetUid);
+              fetchLobbies();
+            }}
+            onAcceptRequest={async (uid, name) => {
+              await handleRequestAction('accept', uid, name);
+              fetchLobbies();
+            }}
+            onRejectRequest={async (uid) => {
+              await handleRequestAction('reject', uid);
+              fetchLobbies();
+            }}
+            onTransferLeader={async (newHostUid) => {
+              if (!modals.details) return;
+              try {
+                await axios.put(`${API_URL}/lobbies/${modals.details._id}/transfer`, { uid: user.uid, newHostUid });
+                toast.success("Leadership transferred!");
+                fetchLobbies();
+              } catch (err) {
+                toast.error("Failed to transfer leadership");
+              }
+            }}
+            onViewMember={(member) => {/* View member logic */}}
+          />
+        )
+      )}
       {modals.profile && <ProfileModal isOpen={true} onClose={() => setModals({...modals, profile: false})} user={user} onUpdate={(data) => { updateProfile(data); setModals({...modals, profile: false}); }} onDeleteAccount={() => setModals({ ...modals, deleteAccount: true })} />}
-      <LogoutModal isOpen={modals.logout} onClose={() => setModals({ ...modals, logout: false })} onConfirm={() => { logout(); setModals({ ...modals, logout: false }); }} />
+      <LogoutModal isOpen={modals.logout} onClose={() => setModals({ ...modals, logout: false })} onConfirm={() => { logout(); setActiveTab('home'); setModals({ ...modals, logout: false }); }} />
       <DisbandModal isOpen={!!modals.disband} onClose={() => setModals({ ...modals, disband: null })} onConfirm={handleDisband} />
       <LeaveModal isOpen={!!modals.leave} onClose={() => setModals({ ...modals, leave: null })} onConfirm={handleLeave} />
       <DeleteAccountModal isOpen={modals.deleteAccount} onClose={() => setModals({ ...modals, deleteAccount: false })} onConfirm={async () => { await deleteAccount(); setModals({ ...modals, deleteAccount: false, profile: false }); }} />

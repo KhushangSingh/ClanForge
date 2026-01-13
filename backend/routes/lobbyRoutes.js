@@ -15,7 +15,13 @@ router.get('/', async (req, res) => {
 // POST Create Lobby
 router.post('/', async (req, res) => {
   try {
-    const newLobby = new Lobby(req.body);
+    // Only keep the date part for eventDate if present
+    const lobbyData = { ...req.body };
+    if (lobbyData.eventDate) {
+      // Accepts 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm' and strips time
+      lobbyData.eventDate = new Date(lobbyData.eventDate.split('T')[0]);
+    }
+    const newLobby = new Lobby(lobbyData);
     await newLobby.save();
     const io = req.app.get('io');
     io.emit('lobbies_updated'); 
@@ -24,6 +30,48 @@ router.post('/', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
+// ---------------------------------------------------------
+// [FIXED] PUT Update Lobby Details (Title, Description, etc.)
+// ---------------------------------------------------------
+router.put('/:id', async (req, res) => {
+  try {
+    const lobby = await Lobby.findById(req.params.id);
+    if (!lobby) return res.status(404).json({ msg: 'Lobby not found' });
+
+    // Security: Only Host can edit
+    if (lobby.hostId !== req.body.hostId) {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
+
+    const updatedLobby = await Lobby.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          title: req.body.title,
+          description: req.body.description,
+          category: req.body.category,
+          location: req.body.location,
+          eventDate: req.body.eventDate ? new Date(req.body.eventDate.split('T')[0]) : undefined,
+          skill: req.body.skill,
+          maxPlayers: req.body.maxPlayers,
+          // Update host meta in case phone/email changed
+          hostMeta: req.body.hostMeta 
+        }
+      },
+      { new: true }
+    );
+
+    const io = req.app.get('io');
+    io.emit('lobbies_updated');
+
+    res.json(updatedLobby);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+// ---------------------------------------------------------
 
 // POST Request to Join
 router.post('/:id/request', async (req, res) => {
@@ -47,7 +95,7 @@ router.post('/:id/request', async (req, res) => {
   }
 });
 
-// POST Accept Request (FIXED: Using Mongoose $push and $pull)
+// POST Accept Request
 router.post('/:id/accept', async (req, res) => {
   const { requestUid } = req.body;
 
@@ -55,18 +103,16 @@ router.post('/:id/accept', async (req, res) => {
     const lobby = await Lobby.findById(req.params.id);
     if (!lobby) return res.status(404).json({ msg: 'Lobby not found' });
 
-    // Find the request details
     const requestData = lobby.requests.find(r => r.uid === requestUid);
     if (!requestData) return res.status(404).json({ msg: 'Request not found' });
 
-    // Atomic update to ensure data consistency
     await Lobby.findByIdAndUpdate(req.params.id, {
-        $push: { 
-            players: { uid: requestData.uid, name: requestData.name } 
-        },
-        $pull: { 
-            requests: { uid: requestUid } 
-        }
+      $push: { 
+        players: { uid: requestData.uid, name: requestData.name, avatarId: requestData.avatarId || 0 } 
+      },
+      $pull: { 
+        requests: { uid: requestUid } 
+      }
     });
 
     const io = req.app.get('io');
@@ -79,7 +125,7 @@ router.post('/:id/accept', async (req, res) => {
   }
 });
 
-// POST Reject Request (FIXED: Using Mongoose $pull)
+// POST Reject Request
 router.post('/:id/reject', async (req, res) => {
   const { requestUid } = req.body;
 
@@ -103,20 +149,29 @@ router.post('/:id/reject', async (req, res) => {
 router.put('/:id/leave', async (req, res) => {
   const { uid } = req.body;
   try {
-    // Atomic pull is safer for concurrent leaves
+    const lobby = await Lobby.findById(req.params.id);
+    if (!lobby) return res.status(404).json({ msg: 'Lobby not found' });
+    // If user is host, prevent leaving unless another member is promoted
+    if (lobby.hostId === uid) {
+      if (lobby.players.length > 1) {
+        return res.status(400).json({ msg: 'You must make another member the leader before leaving.' });
+      } else {
+        // If host is the only member, allow disband (delete lobby)
+        await Lobby.findByIdAndDelete(req.params.id);
+        const io = req.app.get('io');
+        io.emit('lobbies_updated');
+        return res.json({ msg: 'Lobby disbanded' });
+      }
+    }
     await Lobby.findByIdAndUpdate(req.params.id, {
-        $pull: { players: { uid: uid } }
+      $pull: { players: { uid: uid } }
     });
-    
-    // Check if empty to delete (requires fetching updated doc, simplified here)
     const updatedLobby = await Lobby.findById(req.params.id);
     if (updatedLobby && updatedLobby.players.length === 0) {
-        await Lobby.findByIdAndDelete(req.params.id);
+      await Lobby.findByIdAndDelete(req.params.id);
     }
-
     const io = req.app.get('io');
     io.emit('lobbies_updated');
-
     res.json({ msg: 'Left lobby' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -135,7 +190,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// PUT Join (Direct - kept for compatibility)
+// PUT Join (Direct)
 router.put('/:id/join', async (req, res) => {
   const { uid, name } = req.body;
   try {
@@ -150,29 +205,25 @@ router.put('/:id/join', async (req, res) => {
   }
 });
 
-// KICK MEMBER (Host Only)
+// KICK MEMBER
 router.put('/:id/kick', async (req, res) => {
-  const { uid, targetUid } = req.body; // uid = host, targetUid = person to kick
+  const { uid, targetUid } = req.body;
   try {
     const lobby = await Lobby.findById(req.params.id);
     if (!lobby) return res.status(404).json({ msg: 'Lobby not found' });
 
-    // Verify request is coming from the host
     if (lobby.hostId !== uid) {
       return res.status(401).json({ msg: 'Not authorized' });
     }
 
-    // Remove the target user
     lobby.players = lobby.players.filter(p => p.uid !== targetUid);
     
-    // Also remove any pending request from that user if it exists
     if (lobby.requests) {
       lobby.requests = lobby.requests.filter(r => r.uid !== targetUid);
     }
 
     await lobby.save();
     
-    // Notify clients (handled by socket in frontend, or emit here if you have socket instance)
     req.app.get('io').emit('lobbies_updated'); 
     
     res.json(lobby);
@@ -181,26 +232,20 @@ router.put('/:id/kick', async (req, res) => {
   }
 });
 
-// TRANSFER HOST (New Route)
+// TRANSFER HOST
 router.put('/:id/transfer', async (req, res) => {
   const { uid, newHostUid } = req.body;
   try {
     const lobby = await Lobby.findById(req.params.id);
     
-    // Verify current host
     if (lobby.hostId !== uid) return res.status(401).json({ msg: 'Not authorized' });
 
-    // Find the new host in the player list
     const newHost = lobby.players.find(p => p.uid === newHostUid);
     if (!newHost) return res.status(404).json({ msg: 'New host not found in lobby' });
 
-    // Transfer ownership
     lobby.hostId = newHost.uid;
     lobby.hostName = newHost.name;
-    
-    // Note: hostMeta (phone/email) will update next time the new host saves their profile
-    // For now, we clear it or fetch user details (Optional simplification: just clear it)
-    lobby.hostMeta = { phone: null, email: null }; 
+    lobby.hostMeta = { phone: null, email: null };
 
     await lobby.save();
     req.app.get('io').emit('lobbies_updated');

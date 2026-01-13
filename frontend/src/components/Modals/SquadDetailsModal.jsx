@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
+import { API_URL } from '../../constants';
+import UserDetailsModal from './UserDetailsModal';
+import { Loader2 } from 'lucide-react';
+import { AVATARS } from '../../constants';
 import { MapPin, User, Calendar, Phone, AtSign, Bell, MessageCircle, UserX, UserCheck, UserMinus, LogOut, Plus, Crown } from 'lucide-react';
 import { Modal, Badge } from '../UI';
 import { getCategoryStyle } from '../../constants';
 
-const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAcceptRequest, onRejectRequest, onViewMember }) => {
+
+const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAcceptRequest, onRejectRequest, onViewMember, onTransferLeader }) => {
+  const [contactUser, setContactUser] = useState(null);
+  const [viewUser, setViewUser] = useState(null);
+  const [viewUserProfile, setViewUserProfile] = useState(null);
   if (!lobby) return null;
 
   const players = lobby.players || [];
@@ -15,6 +24,18 @@ const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAc
   const isMember = user && players.some(p => p.uid === user.uid);
   const isFull = players.length >= (lobby.maxPlayers || 4);
   const formattedDate = lobby.createdAt ? new Date(lobby.createdAt).toLocaleDateString() : 'Recently';
+
+  // Fetch full user profile when viewUser changes
+  React.useEffect(() => {
+    if (viewUser && viewUser.uid) {
+      setViewUserProfile(null);
+      axios.get(`${API_URL}/users/${viewUser.uid}`)
+        .then(res => setViewUserProfile(res.data))
+        .catch(() => setViewUserProfile(viewUser)); // fallback to minimal info
+    } else {
+      setViewUserProfile(null);
+    }
+  }, [viewUser]);
 
   return (
     <Modal isOpen={!!lobby} onClose={onClose} title="Squad Details" maxWidth="max-w-4xl">
@@ -92,12 +113,16 @@ const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAc
               </h4>
               <div className="space-y-2 md:space-y-3 max-h-[150px] overflow-y-auto custom-scrollbar">
                 {requests.map((req, i) => (
-                  <div key={i} className="bg-white p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col gap-2">
+                  <div
+                    key={i}
+                    className="bg-white p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col gap-2 cursor-pointer hover:border-[#FF6F00]"
+                    onClick={() => setViewUser(req)}
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2 md:gap-3">
                         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-black text-gray-500">{req.name[0]}</div>
                         <div>
-                          <p className="font-bold text-[#2D2D2D] text-xs md:text-sm">{req.name}</p>
+                          <span className="font-bold text-[#2D2D2D] text-xs md:text-sm">{req.name}</span>
                           <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-wider">Wants to join</p>
                         </div>
                       </div>
@@ -108,6 +133,22 @@ const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAc
                     </div>
                   </div>
                 ))}
+                {/* Contact Modal */}
+                {contactUser && (
+                  <Modal isOpen={!!contactUser} onClose={() => setContactUser(null)} title={`Contact: ${contactUser.name}`} maxWidth="max-w-md">
+                    <div className="flex flex-col gap-3">
+                      {contactUser.phone && (
+                        <div className="flex items-center gap-2 text-sm font-bold text-gray-700"><Phone size={16} className="text-emerald-500"/> {contactUser.phone}</div>
+                      )}
+                      {contactUser.email && (
+                        <div className="flex items-center gap-2 text-sm font-bold text-gray-700"><AtSign size={16} className="text-blue-500"/> {contactUser.email}</div>
+                      )}
+                      {!contactUser.phone && !contactUser.email && (
+                        <div className="text-gray-400 text-sm">No contact info provided.</div>
+                      )}
+                    </div>
+                  </Modal>
+                )}
               </div>
             </div>
           )}
@@ -127,19 +168,26 @@ const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAc
               {players.map((p, i) => (
                 <div key={i} className="flex items-center gap-2 group">
                   <button 
-                    onClick={() => onViewMember && onViewMember(p)} 
+                    onClick={() => setViewUser(p)} 
                     className="flex-1 bg-white border-2 border-gray-100 hover:border-[#FF6F00] px-3 py-2 md:py-3 rounded-xl md:rounded-2xl transition-all text-left flex items-center gap-2 md:gap-3 shadow-sm hover:shadow-md"
                   >
-                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center text-[10px] md:text-xs font-black text-[#FF6F00] shrink-0">
-                      {p.name ? p.name[0] : '?'}
-                    </div>
+                    <img
+                      src={typeof p.avatarId === 'number' ? AVATARS[p.avatarId % AVATARS.length] : AVATARS[0]}
+                      alt={p.name}
+                      className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover bg-gray-100 border-2 border-white shrink-0"
+                    />
                     <div className="flex-1 truncate font-bold text-gray-700 text-xs md:text-sm">{p.name}</div>
                     {p.uid === lobby.hostId && <Crown size={12} className="text-amber-400 fill-current" />}
                   </button>
                   {isHost && p.uid !== user?.uid && (
-                    <button onClick={(e) => { e.stopPropagation(); onKick(p.uid); }} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-rose-50 text-rose-500 rounded-lg md:rounded-xl hover:bg-rose-500 hover:text-white transition-all">
-                      <UserMinus size={14} className="md:w-4 md:h-4" />
-                    </button>
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); onKick(p.uid); }} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-rose-50 text-rose-500 rounded-lg md:rounded-xl hover:bg-rose-500 hover:text-white transition-all" title="Remove Member">
+                        <UserMinus size={14} className="md:w-4 md:h-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); onTransferLeader && onTransferLeader(p.uid); }} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-amber-50 text-amber-500 rounded-lg md:rounded-xl hover:bg-amber-500 hover:text-white transition-all ml-1" title="Make Leader">
+                        <Crown size={14} className="md:w-4 md:h-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               ))}
@@ -148,7 +196,7 @@ const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAc
 
           <div className="mt-auto pt-4 md:pt-6 border-t border-gray-100">
             {isMember ? (
-              <button onClick={onLeave} className="w-full bg-white border-2 border-rose-200 text-gray-500 py-3 md:py-4 rounded-xl md:rounded-2xl font-extrabold hover:border-rose-500 hover:text-rose-500 hover:bg-rose-50 transition-all flex items-center justify-center gap-2 text-sm md:text-base">
+              <button onClick={onLeave} className="w-full bg-rose-500 border-2 border-rose-500 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-extrabold hover:bg-rose-600 hover:border-rose-600 transition-all flex items-center justify-center gap-2 text-sm md:text-base">
                 <LogOut size={16} /> Leave Squad
               </button>
             ) : isFull ? (
@@ -161,6 +209,22 @@ const SquadDetailsModal = ({ lobby, user, onClose, onJoin, onLeave, onKick, onAc
           </div>
         </div>
       </div>
+      {/* User Details Modal for members/requestors */}
+      {/* Only show modal when viewUserProfile is loaded, show spinner while loading */}
+      <UserDetailsModal
+        isOpen={!!viewUser}
+        onClose={() => setViewUser(null)}
+        user={viewUserProfile}
+      />
+      {/* Loading spinner overlay in modal while fetching profile */}
+      {viewUser && !viewUserProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-xl">
+            <Loader2 className="animate-spin text-[#FF6F00]" size={36} />
+            <div className="font-bold text-gray-700">Loading profile...</div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };

@@ -4,22 +4,22 @@ import { Modal } from '../UI';
 import { CATEGORIES, SKILL_LEVELS } from '../../constants';
 
 export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLobby }) {
-  const initialState = {
-    title: '', description: '', category: 'hackathon', 
-    location: '', maxPlayers: 4, skill: '', eventDate: ''
-  };
+    const initialState = {
+        title: '', description: '', category: 'hackathon', 
+        location: '', maxPlayers: 4, skill: '', eventDate: ''
+    };
 
   const [formData, setFormData] = useState(initialState);
 
-  useEffect(() => {
-    if (editingLobby) {
-        const dateStr = editingLobby.eventDate ? new Date(editingLobby.eventDate).toISOString().slice(0, 16) : '';
-        // FIX: Ensure the entire editingLobby object (including _id) is spread into state
-        setFormData({ ...editingLobby, eventDate: dateStr }); 
-    } else {
-        setFormData(initialState); 
-    }
-  }, [editingLobby, isOpen]);
+    useEffect(() => {
+        if (editingLobby) {
+            // Format eventDate as YYYY-MM-DD for date input
+            const dateStr = editingLobby.eventDate ? new Date(editingLobby.eventDate).toISOString().slice(0, 10) : '';
+            setFormData({ ...editingLobby, eventDate: dateStr }); 
+        } else {
+            setFormData(initialState); 
+        }
+    }, [editingLobby, isOpen]);
 
   const labelStyle = "text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5";
   const inputWrapperStyle = "flex flex-col";
@@ -30,7 +30,16 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingLobby ? "Edit Squad" : "Launch Squad"} maxWidth="max-w-5xl">
-       <form onSubmit={(e) => onSubmit(e, formData)} className="flex flex-col gap-4 md:gap-6">
+             <form onSubmit={(e) => {
+                 // Always send eventDate as YYYY-MM-DD string
+                 let submitData = { ...formData };
+                 if (submitData.eventDate instanceof Date) {
+                     submitData.eventDate = submitData.eventDate.toISOString().slice(0, 10);
+                 } else if (typeof submitData.eventDate === 'string' && submitData.eventDate.includes('T')) {
+                     submitData.eventDate = submitData.eventDate.split('T')[0];
+                 }
+                 onSubmit(e, submitData);
+             }} className="flex flex-col gap-4 md:gap-6">
           
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
             <div className={`md:col-span-8 ${inputWrapperStyle}`}>
@@ -47,7 +56,8 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
             </div>
             <div className={`md:col-span-4 ${inputWrapperStyle} relative`}>
                 <label className={labelStyle}><Layers size={12}/> Category</label>
-                <select className={selectStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                <select className={selectStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} required>
+                    <option value="" disabled>Select category</option>
                     {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
             </div>
@@ -68,7 +78,7 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
             <div className="md:col-span-5 grid grid-cols-2 gap-3 md:gap-4 content-start">
                 <div className={`col-span-2 ${inputWrapperStyle}`}>
                     <label className={labelStyle}><Calendar size={12}/> When?</label>
-                    <input type="datetime-local" className={`${inputStyle} [color-scheme:light]`} value={formData.eventDate} onChange={e => setFormData({...formData, eventDate: e.target.value})} required />
+                    <input type="date" className={`${inputStyle} [color-scheme:light]`} value={formData.eventDate} onChange={e => setFormData({...formData, eventDate: e.target.value})} required />
                 </div>
 
                 <div className={`col-span-2 ${inputWrapperStyle}`}>
@@ -83,8 +93,8 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
 
                 <div className={`${inputWrapperStyle} relative`}>
                     <label className={labelStyle}><Target size={12}/> Skill</label>
-                    <select className={selectStyle} value={formData.skill} onChange={e => setFormData({...formData, skill: e.target.value})}>
-                        <option value="">Any</option>
+                    <select className={selectStyle} value={formData.skill} onChange={e => setFormData({...formData, skill: e.target.value})} required>
+                        <option value="" disabled>Select skill</option>
                         {SKILL_LEVELS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>

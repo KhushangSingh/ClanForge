@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const LobbySchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
-  category: { type: String, required: true, enum: ['sports', 'hackathon', 'gaming', 'study'] },
+  category: { type: String, required: true, enum: ['sports', 'hackathon', 'gaming', 'study', 'jamming', 'project', 'creative'] },
   location: { type: String, required: true },
   
   eventDate: { type: Date, required: true }, 
@@ -18,6 +18,7 @@ const LobbySchema = new mongoose.Schema({
   players: [{
     uid: String,
     name: String,
+    avatarId: { type: Number, default: 0 },
     joinedAt: { type: Date, default: Date.now }
   }],
 

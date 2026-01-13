@@ -26,3 +26,15 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
 }
+
+/* Hide vertical scrollbar but keep scrolling */
+body {
+  overflow-y: scroll;
+}
+body::-webkit-scrollbar {
+  width: 0 !important;
+  background: transparent;
+}
+html {
+  scrollbar-width: none;
+}

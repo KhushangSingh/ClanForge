@@ -53,25 +53,24 @@ router.post('/login', async (req, res) => {
 
 // Create or Update User
 router.post('/', async (req, res) => {
-  // 1. We need to accept ALL these fields from the frontend
-  const { uid, name, bio, phone, email, avatarId, showContact } = req.body;
-  
+  // Accept all fields including customLinks (no instagram)
+  const { uid, name, bio, phone, email, avatarId, showContact, portfolio, linkedin, github, customLinks } = req.body;
   try {
     let user = await User.findOne({ uid });
-    
     if (user) {
-      // 2. Update ALL fields
       user.name = name;
       user.bio = bio;
       user.phone = phone;
       user.email = email;
       user.avatarId = avatarId;
-      user.showContact = showContact; // <--- CRITICAL: This was missing!
-      
+      user.showContact = showContact;
+      user.portfolio = portfolio;
+      user.linkedin = linkedin;
+      user.github = github;
+      user.customLinks = Array.isArray(customLinks) ? customLinks : [];
       await user.save();
     } else {
-      // Create new
-      user = new User({ uid, name, email, bio, phone, avatarId, showContact });
+      user = new User({ uid, name, email, bio, phone, avatarId, showContact, portfolio, linkedin, github, customLinks: Array.isArray(customLinks) ? customLinks : [] });
       await user.save();
     }
     res.json(user);
@@ -92,10 +91,13 @@ router.get('/:uid', async (req, res) => {
       name: user.name,
       avatarId: user.avatarId,
       bio: user.bio,
-      showContact: user.showContact, // Send the boolean
-      // LOGIC: Only send contact info if user allows it
+      showContact: user.showContact,
       phone: user.showContact ? user.phone : null,
-      email: user.showContact ? user.email : null
+      email: user.showContact ? user.email : null,
+      portfolio: user.portfolio || '',
+      linkedin: user.linkedin || '',
+      github: user.github || '',
+      customLinks: Array.isArray(user.customLinks) ? user.customLinks : []
     };
 
     res.json(publicProfile);

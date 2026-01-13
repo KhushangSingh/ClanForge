@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogOut, AlertTriangle, Check, Send, Crown, ArrowRight, UserCheck } from 'lucide-react';
 import { Modal } from '../UI';
 
@@ -102,15 +102,33 @@ export const RequestSentModal = ({ isOpen, onClose }) => (
 );
 
 export const JoinRequestModal = ({ isOpen, onClose, onSubmit, lobbyTitle, user }) => {
+
   const [data, setData] = useState({ 
     name: user?.name || '', 
     phone: user?.phone || '', 
     email: user?.email || '', 
     message: '' 
   });
+  const [edit, setEdit] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  useEffect(() => {
+    setData({
+      name: user?.name || '',
+      phone: user?.phone || '',
+      email: user?.email || '',
+      message: ''
+    });
+    setPhoneError('');
+  }, [user, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Phone validation: must be exactly 10 digits
+    if (!/^\d{10}$/.test(data.phone)) {
+      setPhoneError('Phone number must be exactly 10 digits.');
+      return;
+    }
+    setPhoneError('');
     onSubmit(data);
   };
 
@@ -131,17 +149,21 @@ export const JoinRequestModal = ({ isOpen, onClose, onSubmit, lobbyTitle, user }
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div>
                  <label className="block text-[10px] md:text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Phone</label>
-                 <input type="text" className={inputClass} value={data.phone} onChange={e => setData({...data, phone: e.target.value})} required placeholder="+91..." />
+                 <input type="text" className={inputClass + (edit ? '' : ' opacity-60 cursor-not-allowed')} value={data.phone} onChange={e => { setData({...data, phone: e.target.value}); setPhoneError(''); }} required placeholder="10 digit number" disabled={!edit} maxLength={10} />
+                 {phoneError && <div className="text-xs text-rose-500 font-bold mt-1 ml-1">{phoneError}</div>}
               </div>
               <div>
                  <label className="block text-[10px] md:text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Email</label>
-                 <input type="email" className={inputClass} value={data.email} onChange={e => setData({...data, email: e.target.value})} required placeholder="hello@..." />
+                 <input type="email" className={inputClass + (edit ? '' : ' opacity-60 cursor-not-allowed')} value={data.email} onChange={e => setData({...data, email: e.target.value})} required placeholder="hello@..." disabled={!edit} />
               </div>
           </div>
           <div>
               <label className="block text-[10px] md:text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Message</label>
               <textarea rows="3" className={inputClass} value={data.message} onChange={e => setData({...data, message: e.target.value})} placeholder="I'm a pro at this..." />
           </div>
+        </div>
+        <div className="flex justify-end mb-2">
+          <button type="button" className="text-xs text-[#FF6F00] font-bold underline" onClick={() => setEdit(e => !e)}>{edit ? 'Cancel Edit' : 'Change/Update Details'}</button>
         </div>
         <button className="w-full bg-[#2D2D2D] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold hover:bg-black transition-all shadow-xl flex items-center justify-center gap-2 hover:scale-[1.02] text-sm md:text-base">
             <Send size={16} className="md:w-[18px]" /> Send Request
