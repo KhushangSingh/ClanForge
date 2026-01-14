@@ -15,6 +15,9 @@ const LobbySchema = new mongoose.Schema({
   hostName: { type: String, required: true },
   hostMeta: { phone: String, email: String },
 
+  // [NEW] Flag to prevent double counting success stats
+  hasReachedMax: { type: Boolean, default: false },
+
   players: [{
     uid: String,
     name: String,

@@ -11,11 +11,6 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-md" 
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-[#2D2D2D]/60 backdrop-blur-md animate-in fade-in duration-200">
-      {/* Responsive Changes:
-        1. rounded-t-[2rem] md:rounded-[2.5rem] -> Bottom sheet on mobile, centered rounded card on desktop
-        2. max-h-[85vh] -> Prevents mobile keyboard issues
-        3. w-full -> Full width on mobile
-      */}
       <div className={`bg-white w-full ${maxWidth} rounded-t-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 zoom-in-95 duration-300 flex flex-col max-h-[85vh] md:max-h-[90vh]`}>
         
         {/* Header: Smaller padding on mobile */}

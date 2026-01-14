@@ -11,7 +11,9 @@ yarn.lock
 */.env
 */.env.local
 backend/.env
+frontend/.env
 .env
+**/.env
 
 # Build outputs
 dist/

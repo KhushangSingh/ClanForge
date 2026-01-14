@@ -37,11 +37,7 @@ const Sidebar = ({ activeTab, isOpen, onClose, setActiveTab, onLogout, userName,
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-50 bg-[#2D2D2D] text-white flex flex-col transition-transform duration-300 ease-in-out
-        
-        /* WIDTH CHANGE HERE: w-64 (256px) for mobile, md:w-80 (320px) for desktop */
-        w-64 md:w-80
-        
+        fixed inset-y-0 left-0 z-50 bg-[#2D2D2D] text-white flex flex-col transition-transform duration-300 ease-in-out w-64 md:w-80
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         lg:translate-x-0 lg:fixed lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[2.5rem] lg:h-[calc(100vh-2rem)] 
         shadow-2xl border-r lg:border border-gray-800
@@ -50,11 +46,11 @@ const Sidebar = ({ activeTab, isOpen, onClose, setActiveTab, onLogout, userName,
         <div className="h-24 md:h-28 flex items-center px-5 md:px-8 justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 md:w-12 md:h-12 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(255,111,0,0.5)] -rotate-6 overflow-hidden p-1.5">
-              <img src={Logo} alt="SquadSync" className="w-full h-full object-contain" />
+              <img src={Logo} alt="ClanForge" className="w-full h-full object-contain" />
             </div>
             {/* Reduced text size slightly for the smaller mobile sidebar */}
             <h1 className="text-xl md:text-3xl font-extrabold tracking-tighter">
-              Squad<span className="text-[#FF6F00]">Sync</span>
+              Clan<span className="text-[#FF6F00]">Forge</span>
             </h1>
           </div>
           {/* Close Button (Mobile Only) */}
@@ -65,9 +61,9 @@ const Sidebar = ({ activeTab, isOpen, onClose, setActiveTab, onLogout, userName,
 
         {/* Navigation */}
         <nav className="flex-1 px-3 md:px-4 overflow-y-auto py-2 scrollbar-hide">
-          <NavItem id="home" icon={Compass} label="Find Squads" />
-          <NavItem id="created" icon={PlusCircle} label="My Squads" badge={pendingRequestsCount} />
-          <NavItem id="joined" icon={UserCheck} label="Joined Squads" />
+          <NavItem id="home" icon={Compass} label="Find Clans" />
+          <NavItem id="created" icon={PlusCircle} label="My Clans" badge={pendingRequestsCount} />
+          <NavItem id="joined" icon={UserCheck} label="Joined Clans" />
         </nav>
 
         {/* User Profile Footer */}

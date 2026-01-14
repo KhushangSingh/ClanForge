@@ -11,7 +11,7 @@ const FilterBar = ({ filter, setFilter }) => {
             ? 'bg-[#2D2D2D] text-white border-[#2D2D2D] shadow-lg scale-105' 
             : 'bg-white text-gray-500 border-transparent hover:border-gray-200'}`}
       >
-        All Squads
+        All Clans
       </button>
       
       {CATEGORIES.map(cat => (

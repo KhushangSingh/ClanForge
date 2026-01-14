@@ -12,7 +12,6 @@ const app = express();
 const server = http.createServer(app);
 
 // --- Middleware ---
-// UPDATED: Added localhost:5173 to allowed origins
 app.use(cors({
     origin: ["http://localhost:5173", "https://squadsync-frontend.onrender.com"], 
     methods: ["GET", "POST", "PUT", "DELETE"],

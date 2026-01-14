@@ -43,7 +43,7 @@ export default function CreateSquadModal({ isOpen, onClose, onSubmit, editingLob
           
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
             <div className={`md:col-span-8 ${inputWrapperStyle}`}>
-                <label className={labelStyle}><Type size={12}/> Squad Name</label>
+                <label className={labelStyle}><Type size={12}/> Clan Name</label>
                 <input 
                     type="text" 
                     className={`${inputStyle} text-base md:text-lg`} 
