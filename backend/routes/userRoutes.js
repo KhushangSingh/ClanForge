@@ -12,17 +12,17 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // --- NODEMAILER CONFIG ---
 const transporter = nodemailer.createTransport({
-  service: 'gmail', 
+  service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS 
+    pass: process.env.EMAIL_PASS
   }
 });
 
 // --- HELPER: SEND CUSTOM BRANDED OTP EMAIL ---
 const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
-    from: `"ClanForge" <${process.env.EMAIL_USER}>`, 
+    from: `"ClanForge" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Your ClanForge Verification Code',
     html: `
@@ -78,8 +78,8 @@ router.post('/send-otp', async (req, res) => {
 
     res.json({ msg: 'OTP sent to email' });
   } catch (err) {
-    console.error("OTP Error:", err);
-    res.status(500).json({ msg: 'Failed to send OTP. Check server logs.' });
+    console.error("OTP Error Details:", err);
+    res.status(500).json({ msg: 'Failed to send OTP. Check server logs for details.', error: err.message });
   }
 });
 
@@ -95,12 +95,12 @@ router.post('/register-verify', async (req, res) => {
       uid,
       name,
       email,
-      password, 
+      password,
       avatarId: Math.floor(Math.random() * 8)
     });
 
     await newUser.save();
-    await OTP.deleteMany({ email }); 
+    await OTP.deleteMany({ email });
     res.json(newUser);
   } catch (err) {
     console.error("Register Error:", err);
@@ -127,8 +127,8 @@ router.post('/google', async (req, res) => {
   const { token } = req.body;
   try {
     const ticket = await client.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
     });
     const { name, email } = ticket.getPayload();
 
@@ -156,49 +156,49 @@ router.post('/google', async (req, res) => {
 
 // 5. GET User Profile
 router.get('/:uid', async (req, res) => {
-    try {
-      const user = await User.findOne({ uid: req.params.uid });
-      if (!user) return res.status(404).json({ msg: 'User not found' });
-  
-      const publicProfile = {
-        uid: user.uid,
-        name: user.name,
-        avatarId: user.avatarId,
-        bio: user.bio,
-        portfolio: user.portfolio || '',
-        linkedin: user.linkedin || '',
-        github: user.github || '',
-        customLinks: Array.isArray(user.customLinks) ? user.customLinks : []
-      };
-      res.json(publicProfile);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+  try {
+    const user = await User.findOne({ uid: req.params.uid });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const publicProfile = {
+      uid: user.uid,
+      name: user.name,
+      avatarId: user.avatarId,
+      bio: user.bio,
+      portfolio: user.portfolio || '',
+      linkedin: user.linkedin || '',
+      github: user.github || '',
+      customLinks: Array.isArray(user.customLinks) ? user.customLinks : []
+    };
+    res.json(publicProfile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 6. UPDATE User Profile
 router.post('/', async (req, res) => {
-    const { uid, name, bio, phone, email, avatarId, portfolio, linkedin, github, customLinks } = req.body;
-    try {
-      let user = await User.findOne({ uid });
-      if (user) {
-        user.name = name;
-        user.bio = bio;
-        user.phone = phone;
-        user.email = email;
-        user.avatarId = avatarId;
-        user.portfolio = portfolio;
-        user.linkedin = linkedin;
-        user.github = github;
-        user.customLinks = Array.isArray(customLinks) ? customLinks : [];
-        await user.save();
-        res.json(user);
-      } else {
-        res.status(404).json({ msg: 'User not found to update' });
-      }
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+  const { uid, name, bio, phone, email, avatarId, portfolio, linkedin, github, customLinks } = req.body;
+  try {
+    let user = await User.findOne({ uid });
+    if (user) {
+      user.name = name;
+      user.bio = bio;
+      user.phone = phone;
+      user.email = email;
+      user.avatarId = avatarId;
+      user.portfolio = portfolio;
+      user.linkedin = linkedin;
+      user.github = github;
+      user.customLinks = Array.isArray(customLinks) ? customLinks : [];
+      await user.save();
+      res.json(user);
+    } else {
+      res.status(404).json({ msg: 'User not found to update' });
     }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 7. DELETE User (THIS WAS MISSING)
@@ -207,7 +207,7 @@ router.delete('/:uid', async (req, res) => {
 
   try {
     const deletedUser = await User.findOneAndDelete({ uid });
-    
+
     if (!deletedUser) {
       return res.status(404).json({ msg: 'User not found' });
     }
@@ -220,7 +220,7 @@ router.delete('/:uid', async (req, res) => {
       { "players.uid": uid },
       { $pull: { players: { uid: uid } } }
     );
-    
+
     // Also remove any pending requests from this user
     await Lobby.updateMany(
       { "requests.uid": uid },
