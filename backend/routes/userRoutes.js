@@ -6,6 +6,7 @@ const Lobby = require('../models/Lobby'); // Import Lobby to clean up data
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
+const bcrypt = require('bcryptjs');
 
 // Ensure this environment variable is set in .env
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -189,11 +190,16 @@ router.post('/register-verify', async (req, res) => {
     if (!otpRecord) return res.status(400).json({ msg: 'Invalid or expired OTP' });
 
     const uid = uuidv4();
+
+    // Hash password with bcrypt before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const newUser = new User({
       uid,
       name,
       email,
-      password,
+      password: hashedPassword, // Save hash instead of plain text
       avatarId: Math.floor(Math.random() * 8)
     });
 
@@ -213,7 +219,11 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
     if (!user.password) return res.status(400).json({ msg: 'Please sign in with Google' });
-    if (user.password !== password) return res.status(400).json({ msg: 'Invalid Credentials' });
+
+    // Compare plain text password with hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
+
     res.json(user);
   } catch (err) {
     res.status(500).send('Server Error');
