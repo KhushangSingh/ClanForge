@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
+import InstallPrompt from './components/InstallPrompt';
 import { Plus, Menu, Loader2 } from 'lucide-react';
 
 // Hooks
@@ -252,6 +253,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] text-[#2D2D2D] font-sans flex flex-col lg:flex-row">
+      <InstallPrompt />
       <Toaster position="top-center" toastOptions={{ style: { borderRadius: '1rem', background: '#333', color: '#fff' } }} />
 
       {isFetchingUser && (
