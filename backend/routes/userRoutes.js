@@ -4,7 +4,7 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const Lobby = require('../models/Lobby'); // Import Lobby to clean up data
 const { v4: uuidv4 } = require('uuid');
-const nodemailer = require('nodemailer');
+
 const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require('bcryptjs');
 
