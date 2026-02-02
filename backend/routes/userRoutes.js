@@ -22,7 +22,10 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  connectionTimeout: 10000
+  connectionTimeout: 10000,
+  family: 4,     // Force IPv4
+  logger: true,  // Log to console
+  debug: true    // Include SMTP traffic
 });
 
 // --- HELPER: SEND CUSTOM BRANDED OTP EMAIL ---
