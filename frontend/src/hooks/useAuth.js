@@ -8,18 +8,18 @@ export const useAuth = () => {
 
   // Load user from local storage on mount
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('squadsync_user'));
+    const storedUser = JSON.parse(localStorage.getItem('clanforge_user'));
     if (storedUser) setUser(storedUser);
   }, []);
 
   const login = (userData) => {
     setUser(userData);
-    localStorage.setItem('squadsync_user', JSON.stringify(userData));
+    localStorage.setItem('clanforge_user', JSON.stringify(userData));
     toast.success(`Welcome, ${userData.name}!`);
   };
 
   const logout = () => {
-    localStorage.removeItem('squadsync_user');
+    localStorage.removeItem('clanforge_user');
     setUser(null);
     toast.success("Logged out successfully");
   };
@@ -28,7 +28,7 @@ export const useAuth = () => {
     try {
       await axios.post(`${API_URL}/users`, updatedData);
       setUser(updatedData);
-      localStorage.setItem('squadsync_user', JSON.stringify(updatedData));
+      localStorage.setItem('clanforge_user', JSON.stringify(updatedData));
       toast.success("Profile updated!");
       return true;
     } catch (err) {

@@ -42,31 +42,101 @@ const sendOTPEmail = async (email, otp) => {
       <head>
         <meta charset="utf-8">
         <style>
-          body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f5; }
-          .container { max-width: 500px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eeeeee; }
-          .header { background-color: #2D2D2D; padding: 30px; text-align: center; }
-          .logo { font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -1px; margin: 0; }
-          .logo span { color: #FF6F00; }
-          .content { padding: 40px 30px; text-align: center; color: #2D2D2D; }
-          h2 { margin-top: 0; font-weight: 900; color: #2D2D2D; font-size: 22px; }
-          .otp-box { background-color: #FFF3E0; border: 2px dashed #FF6F00; border-radius: 12px; display: inline-block; padding: 15px 40px; margin: 25px 0; }
-          .otp-code { font-size: 36px; font-weight: 800; color: #FF6F00; letter-spacing: 6px; margin: 0; }
-          .text-main { font-size: 16px; line-height: 1.6; color: #555555; margin-bottom: 0; }
-          .text-sub { font-size: 14px; color: #999999; margin-top: 10px; }
-          .footer { background-color: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #aaaaaa; border-top: 1px solid #eeeeee; }
+          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Inter:wght@400;600&display=swap');
+          body { margin: 0; padding: 0; font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #1a1a1a; color: #e0e0e0; }
+          .container { 
+            max-width: 480px; 
+            margin: 40px auto; 
+            background: #252525; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); 
+            border: 1px solid #333333; 
+          }
+          .header { 
+            background: linear-gradient(135deg, #FF6F00 0%, #FF8F00 100%); 
+            padding: 30px; 
+            text-align: center; 
+          }
+          .logo { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 28px; 
+            font-weight: 900; 
+            color: #ffffff; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          }
+          .content { padding: 40px 30px; text-align: center; }
+          h2 { 
+            margin-top: 0; 
+            font-weight: 600; 
+            color: #ffffff; 
+            font-size: 20px; 
+            margin-bottom: 10px;
+          }
+          .text-main { 
+            font-size: 15px; 
+            line-height: 1.6; 
+            color: #b0b0b0; 
+            margin-bottom: 25px; 
+          }
+          .otp-box { 
+            background-color: rgba(255, 111, 0, 0.1); 
+            border: 1px solid #FF6F00; 
+            border-radius: 12px; 
+            display: inline-block; 
+            padding: 10px 30px; 
+            margin-bottom: 25px;
+            box-shadow: 0 0 15px rgba(255, 111, 0, 0.2);
+          }
+          .otp-code { 
+            font-family: 'Orbitron', monospace; 
+            font-size: 32px; 
+            font-weight: 700; 
+            color: #FF6F00; 
+            letter-spacing: 4px; 
+            margin: 0; 
+          }
+          .text-sub { font-size: 13px; color: #666666; margin-top: 20px; }
+          .footer { 
+            background-color: #1f1f1f; 
+            padding: 20px; 
+            text-align: center; 
+            font-size: 11px; 
+            color: #555555; 
+            border-top: 1px solid #333333; 
+          }
+          .divider { height: 1px; background: #333333; margin: 20px 0; }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="header"><div class="logo">Squad<span>Sync</span></div></div>
-          <div class="content">
-            <h2>Verify Your Email</h2>
-            <p class="text-main">Welcome to the club! You are just one step away from joining your next squad. Use the code below to verify your account.</p>
-            <div class="otp-box"><h1 class="otp-code">${otp}</h1></div>
-            <p class="text-sub">This code is valid for 5 minutes.</p>
-            <p class="text-sub" style="margin-top: 30px; font-size: 12px;">If you didn't request this email, you can safely ignore it.</p>
+          <div class="header">
+            <div class="logo">CLANFORGE</div>
           </div>
-          <div class="footer">&copy; ${new Date().getFullYear()} ClanForge. Connect. Collaborate. Create.<br>This is an automated message, please do not reply.</div>
+          <div class="content">
+            <h2>Authentication Required</h2>
+            <p class="text-main">
+              You are accessing your ClanForge secure account. 
+              <br>Enter the code below to verify your identity.
+            </p>
+            
+            <div class="otp-box">
+              <h1 class="otp-code">${otp}</h1>
+            </div>
+
+            <div class="divider"></div>
+            
+            <p class="text-sub">
+              This code expires in 5 minutes.
+              <br>If you did not request this, please ignore this email.
+            </p>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} ClanForge. All Systems Operational.
+            <br>Automated Security Message.
+          </div>
         </div>
       </body>
       </html>
