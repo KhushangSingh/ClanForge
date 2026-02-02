@@ -252,7 +252,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] text-[#2D2D2D] font-sans flex flex-col lg:flex-row">
-      <InstallPWA />
       <Toaster position="top-center" toastOptions={{ style: { borderRadius: '1rem', background: '#333', color: '#fff' } }} />
 
       {isFetchingUser && (
