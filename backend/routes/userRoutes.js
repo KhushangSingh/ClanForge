@@ -12,17 +12,14 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // --- NODEMAILER CONFIG ---
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  service: 'gmail',
   auth: {
+    type: 'OAuth2',
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  connectionTimeout: 10000,
-  family: 4,     // Force IPv4
-  logger: true,
-  debug: true
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    refreshToken: process.env.REFRESH_TOKEN
+  }
 });
 
 // --- HELPER: SEND CUSTOM BRANDED OTP EMAIL ---
