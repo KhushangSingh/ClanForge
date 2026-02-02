@@ -1,7 +1,8 @@
 import { Code, Dumbbell, Gamepad2, Layers, Music, Briefcase, PenTool, GraduationCap, Trophy } from 'lucide-react';
 
-export const API_URL = 'http://localhost:5000/api';
-export const SOCKET_URL = 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+export const API_URL = `${BASE_URL}/api`;
+export const SOCKET_URL = BASE_URL;
 
 export const CATEGORIES = [
   { id: 'hackathon', label: 'Hackathon', icon: Code, color: 'text-violet-600 ring-violet-100', badge: 'bg-violet-50 text-violet-700 border-violet-100' },
