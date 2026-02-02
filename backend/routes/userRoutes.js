@@ -113,7 +113,9 @@ const sendOTPEmail = async (email, otp) => {
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">CLANFORGE</div>
+            <div class="logo">
+              <span style="color: #ffffff;">Clan</span><span style="color: #FF6F00;">Forge</span>
+            </div>
           </div>
           <div class="content">
             <h2>Authentication Required</h2>
