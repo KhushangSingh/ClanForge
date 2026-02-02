@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 // --- Middleware ---
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, "http://localhost:5173", "https://squadsync-frontend.onrender.com"].filter(Boolean),
+  origin: [process.env.FRONTEND_URL, "http://localhost:5173"].filter(Boolean),
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
@@ -28,7 +28,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/clanforge')
 // UPDATED: Added localhost:5173 here as well
 const io = new Server(server, {
   cors: {
-    origin: [process.env.FRONTEND_URL, "http://localhost:5173", "https://squadsync-frontend.onrender.com"].filter(Boolean),
+    origin: [process.env.FRONTEND_URL, "http://localhost:5173"].filter(Boolean),
     methods: ["GET", "POST"],
     credentials: true
   }
