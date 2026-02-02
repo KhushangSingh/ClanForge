@@ -33,7 +33,7 @@ import {
   RequestSentModal
 } from './components/Modals/ActionModals';
 
-import InstallPWA from './components/InstallPWA';
+
 
 export default function App() {
   const { user, login, logout, updateProfile, deleteAccount } = useAuth();
