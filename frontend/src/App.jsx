@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 import { Plus, Menu, Loader2 } from 'lucide-react';
@@ -22,7 +23,10 @@ import CreateSquadModal from './components/Modals/CreateSquadModal';
 import SquadDetailsModal from './components/Modals/SquadDetailsModal';
 import UserDetailsModal from './components/Modals/UserDetailsModal';
 import { ProfileModal } from './components/Modals/ProfileModal';
-import { PrivacyModal, TermsModal } from './components/Modals/LegalModals';
+
+// Pages
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 import {
   LogoutModal,
@@ -91,9 +95,7 @@ export default function App() {
     leave: null,
     join: null,
     deleteAccount: false,
-    requestSent: false,
-    privacy: false,
-    terms: false
+    requestSent: false
   });
 
   // --- MANDATORY PROFILE COMPLETION LOGIC ---
@@ -250,7 +252,7 @@ export default function App() {
     } catch (err) { toast.error(`Error ${action}ing`); }
   };
 
-  return (
+  const AppContent = () => (
     <div className="min-h-screen bg-[#F4F4F5] text-[#2D2D2D] font-sans flex flex-col lg:flex-row">
       <Toaster position="top-center" toastOptions={{ style: { borderRadius: '1rem', background: '#333', color: '#fff' } }} />
 
@@ -356,10 +358,7 @@ export default function App() {
           </div>
         </main>
 
-        <Footer
-          onOpenPrivacy={() => setModals({ ...modals, privacy: true })}
-          onOpenTerms={() => setModals({ ...modals, terms: true })}
-        />
+        <Footer />
       </div>
 
       {/* --- MODALS --- */}
@@ -412,16 +411,6 @@ export default function App() {
         user={modals.viewUser}
       />
 
-      {/* LEGAL MODALS */}
-      <PrivacyModal
-        isOpen={modals.privacy}
-        onClose={() => setModals({ ...modals, privacy: false })}
-      />
-      <TermsModal
-        isOpen={modals.terms}
-        onClose={() => setModals({ ...modals, terms: false })}
-      />
-
       <LogoutModal isOpen={modals.logout} onClose={() => setModals({ ...modals, logout: false })} onConfirm={() => { logout(); setActiveTab('home'); setModals({ ...modals, logout: false }); }} />
       <DisbandModal isOpen={!!modals.disband} onClose={() => setModals({ ...modals, disband: null })} onConfirm={handleDisband} />
       <LeaveModal isOpen={!!modals.leave} onClose={() => setModals({ ...modals, leave: null })} onConfirm={handleLeave} />
@@ -429,5 +418,13 @@ export default function App() {
       <JoinRequestModal isOpen={!!modals.join} onClose={() => setModals({ ...modals, join: null })} onSubmit={handleJoinRequest} lobbyTitle={modals.join?.title} user={user} />
       <RequestSentModal isOpen={modals.requestSent} onClose={() => setModals({ ...modals, requestSent: false })} />
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={<AppContent />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+    </Routes>
   );
 }
