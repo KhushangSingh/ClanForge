@@ -11,33 +11,21 @@ const bcrypt = require('bcryptjs');
 // Ensure this environment variable is set in .env
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const { google } = require('googleapis');
+const nodemailer = require('nodemailer');
 
-// --- GMAIL API CONFIG (HTTP) ---
-// This bypasses SMTP ports (465/587) which are blocked by Render.
-const oAuth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  "https://developers.google.com/oauthplayground" // Redirect URI, not used for server-to-server but required
-);
-
-oAuth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
-
-const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
+// --- NODEMAILER CONFIG (App Password) ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // --- HELPER: SEND EMAIL VIA GMAIL REST API ---
 const sendOTPEmail = async (email, otp) => {
   const subject = 'Your ClanForge Verification Code';
-  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-
-  const messageParts = [
-    `From: ClanForge <${process.env.EMAIL_USER}>`,
-    `To: ${email}`,
-    `Subject: ${utf8Subject}`,
-    'Content-Type: text/html; charset=utf-8',
-    'MIME-Version: 1.0',
-    '',
-    `
+  const message = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -143,24 +131,16 @@ const sendOTPEmail = async (email, otp) => {
         </div>
       </body>
       </html>
-    `
-  ];
+    `;
 
-  const message = messageParts.join('\n');
+  const mailOptions = {
+    from: `"ClanForge" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: subject,
+    html: message
+  };
 
-  // The body needs to be base64url encoded.
-  const encodedMessage = Buffer.from(message)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
-  await gmail.users.messages.send({
-    userId: 'me',
-    requestBody: {
-      raw: encodedMessage
-    }
-  });
+  await transporter.sendMail(mailOptions);
 };
 
 // 1. INITIATE REGISTRATION (Send OTP)
@@ -175,10 +155,10 @@ router.post('/send-otp', async (req, res) => {
     await new OTP({ email, otp }).save();
     await sendOTPEmail(email, otp);
 
-    res.json({ msg: 'OTP sent to email (via HTTP API)' });
+    res.json({ msg: 'OTP sent to email (via Nodemailer)' });
   } catch (err) {
-    console.error("Gmail API Error:", err);
-    res.status(500).json({ msg: 'Failed to send OTP.', error: err.message, stack: err.stack });
+    console.error("Nodemailer Error:", err);
+    res.status(500).json({ msg: 'Failed to send OTP.', error: err.message });
   }
 });
 
